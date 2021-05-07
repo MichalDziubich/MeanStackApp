@@ -1,24 +1,47 @@
 const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+const Post = require('./models/post');
 
 const app = express();
 
-app.use('/api/posts', (req, res, next) => {
-  const posts = [
-    {
-      id: "shdjfjshd7",
-      title: "first server-side post",
-      content: "This is coming from Asgardian server"
-    },
-    {
-      id: "shd43636d7",
-      title: "Second server-side post",
-      content: "This is coming from Captain Marvel!"
-    }
-  ];
-  res.status(200).json({
-    message: 'Posts fetched succesfully!',
-    posts: posts
+const uri = "mongodb+srv://michal:2RtkFOnzIy1QEUvS@cluster0.59qbo.mongodb.net/Node-Angular?retryWrites=true&w=majority";
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => {
+  console.log('Connected to database!');
+}).catch(() => {
+  console.log('Connection Failed!')
+});
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.setHeader('Access-Control-Allow-Methods', "GET, POST, PATCH, DELETE, OPTIONS")
+  next();
+});
+
+app.post('api/posts', (req, res, next) => {
+  const post = new Post({
+    title: req.body.title,
+    content: req.body.content
   });
+  post.save();
+  res.status(201).json({
+    message: 'Post added successfully!'
+  });
+});
+
+app.use('/api/posts', (req, res, next) => {
+  Post.find().then(documents => {
+    res.status(200).json({
+      message: 'Posts fetched successfully!',
+      posts: documents
+    });
+  });
+
 });
 
 module.exports = app;
